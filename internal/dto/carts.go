@@ -1,5 +1,7 @@
 package dto
 
+import model "product-services/internal/models"
+
 type CartRequestParams struct {
 	ID uint `json:"id" param:"id" query:"id" form:"id" xml:"id"`
 }
@@ -13,4 +15,9 @@ type CartRequestBodyCreate struct {
 type CartRequestBodyUpdate struct {
 	ProductID uint `json:"product_id" validate:"required"`
 	Qty       uint `json:"qty" validate:"required"`
+}
+
+type CartResponseGetById struct {
+	model.Cart
+	CartItems []model.CartItem `json:"cart_items"`
 }
