@@ -2,17 +2,23 @@ package carts
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
+	"product-services/internal/apps/cart_items"
 	"product-services/internal/dto"
 	"product-services/internal/factory"
 	model "product-services/internal/models"
+	"product-services/libs/api"
 )
 
 type Service interface {
-	Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.CartItem, error)
+	// admin roles
 	GetAll() (*[]model.Cart, error)
-	GetById(payload dto.CartRequestParams) (*model.Cart, error)
+	GetById(payload dto.CartRequestParams) (*dto.CartResponseGetById, error)
+	// customer_roles and admin_roles
+	Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.CartItem, error)
+	GetCustomerCart(customer_id uint) (*dto.CartResponseGetById, error)
 	Update(id uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error)
 	Delete(payload dto.CartRequestParams) (interface{}, error)
 }
@@ -27,21 +33,74 @@ func NewService(f *factory.Factory) Service {
 	}
 }
 
+var CartItemRepo = cart_items.NewRepo(factory.NewFactory().DB)
+
 func (s service) Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.CartItem, error) {
 	var newCart = model.Cart{
 		CustomerID: payload.CustomerID,
 	}
-
-	cart, err := s.CartRepository.Create(newCart)
+	// check cart is already exist ?
+	currentCart, err := s.CartRepository.GetCart(0, payload.CustomerID)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	log.Println(currentCart, "debug ketemu 1")
+
+	var cart *model.Cart
+
+	if currentCart.CustomerID == 0 {
+		cart, err = s.CartRepository.Create(newCart)
+
+		if err != nil {
+			return nil, nil, err
+		}
+		log.Println("debug insert doble", cart)
+
+	} else {
+		cart = currentCart
+	}
+
+	// check cart item is already exist ?
+	currentCartItem, err := CartItemRepo.GetCartItem(0, cart.ID, payload.ProductID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// check product stock
+	product := api.GetProduct(payload.ProductID)
+	stock := product.Data.Product.Stock
+
+	log.Println("api get product", product)
+
 	var newCartItem = model.CartItem{
 		CartID:    cart.ID, // diambil dari data diatas
 		ProductID: payload.ProductID,
 		Qty:       payload.Qty,
 	}
-	cartItem, err := s.CartRepository.CreateCartItem(newCartItem)
+	var cartItem *model.CartItem
+	if currentCartItem.ID == 0 {
+		// check stock
+		if stock < newCartItem.Qty {
+			return nil, nil, fmt.Errorf("qty melebihi stock yang tersedia, yaitu sejumlah %d", stock)
+		}
+		cartItem, err = CartItemRepo.Create(newCartItem)
+	} else {
+		var updatedData map[string]interface{} = make(map[string]interface{})
+		qty := currentCartItem.Qty + payload.Qty
+		log.Println(qty, currentCartItem.Qty, payload.Qty, "qty", currentCartItem)
+		updatedData["qty"] = qty
+
+		// check stock
+		if stock < qty {
+			return nil, nil, fmt.Errorf("qty melebihi stock yang tersedia, yaitu sejumlah %d", stock)
+		}
+
+		cartItem, err = CartItemRepo.Update(currentCartItem.ID, updatedData)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
 
 	if err != nil {
 		return nil, nil, err
@@ -57,19 +116,58 @@ func (s service) GetAll() (*[]model.Cart, error) {
 	return categories, nil
 }
 
-func (s service) GetById(payload dto.CartRequestParams) (*model.Cart, error) {
-	cart, err := s.CartRepository.GetById(payload.ID)
+func (s service) GetById(payload dto.CartRequestParams) (*dto.CartResponseGetById, error) {
+	var result = new(dto.CartResponseGetById)
+
+	cart, err := s.CartRepository.GetCart(payload.ID, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	result.Cart = *cart
+
+	cart_items, err := CartItemRepo.GetAll(cart.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	result.CartItems = *cart_items
+
 	log.Println("service", cart, err)
 	if err != nil || cart.ID == 0 {
 		return nil, errors.New("data not found")
 	}
-	return cart, nil
+	return result, nil
+}
+
+func (s service) GetCustomerCart(customer_id uint) (*dto.CartResponseGetById, error) {
+	var result = new(dto.CartResponseGetById)
+
+	cart, err := s.CartRepository.GetCart(0, customer_id)
+	if err != nil {
+		return nil, err
+	}
+
+	result.Cart = *cart
+
+	cart_items, err := CartItemRepo.GetAll(cart.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	result.CartItems = *cart_items
+
+	log.Println("service", cart, err)
+	if err != nil || cart.ID == 0 {
+		return nil, errors.New("data not found")
+	}
+	return result, nil
 }
 
 func (s service) Update(id uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error) {
 	// get cartItemsId
 	cartId := id
-	cartItemId, err := s.CartRepository.GetCartItemId(cartId, payload.ProductID)
+	cartItemId, err := CartItemRepo.GetCartItem(0, cartId, payload.ProductID)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +177,7 @@ func (s service) Update(id uint, payload dto.CartRequestBodyUpdate) (*model.Cart
 	updatedCartItem["product_id"] = payload.ProductID
 	updatedCartItem["qty"] = payload.Qty
 
-	cartItem, err := s.CartRepository.UpdateCartItem(cartItemId.ID, updatedCartItem)
+	cartItem, err := CartItemRepo.Update(cartItemId.ID, updatedCartItem)
 	if err != nil {
 		return nil, err
 	}
