@@ -25,8 +25,8 @@ type Product struct {
 }
 
 type Data struct {
+	Product
 	Category Category `json:"category"`
-	Product  Product  `json:"product"`
 }
 
 type ProductResponseApi struct {
