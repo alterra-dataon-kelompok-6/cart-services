@@ -21,6 +21,7 @@ func NewHandler(f *factory.Factory) *handler {
 	}
 }
 
+// get all cart
 func (h handler) GetAll(e echo.Context) error {
 	categories, err := h.service.GetAll()
 
@@ -37,6 +38,26 @@ func (h handler) GetAll(e echo.Context) error {
 
 }
 
+// get cart by customer id
+func (h handler) GetCustomerCart(e echo.Context) error {
+	customer_id := middleware.GetUserIdFromToken(e)
+
+	categories, err := h.service.GetCustomerCart(customer_id)
+
+	if err != nil {
+		return e.JSON(http.StatusNotFound, map[string]interface{}{
+			"status":  false,
+			"message": "data not found",
+		})
+	}
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"status": true,
+		"data":   categories,
+	})
+
+}
+
+// get cart by cart_id
 func (h handler) GetById(e echo.Context) error {
 	// id, _ := strconv.Atoi(e.Param("id"))
 	var payload dto.CartRequestParams
@@ -58,6 +79,7 @@ func (h handler) GetById(e echo.Context) error {
 	})
 }
 
+// create new cart
 func (h handler) Create(e echo.Context) error {
 	userId := middleware.GetUserIdFromToken(e)
 	log.Println(userId, "userId")
@@ -84,6 +106,7 @@ func (h handler) Create(e echo.Context) error {
 	})
 }
 
+// update cart data
 func (h handler) Update(e echo.Context) error {
 	// id, _ := strconv.Atoi(e.Param("id"))
 	var id dto.CartRequestParams
@@ -114,6 +137,7 @@ func (h handler) Update(e echo.Context) error {
 
 }
 
+// delete cart data
 func (h handler) Delete(e echo.Context) error {
 	// id, _ := strconv.Atoi(e.Param("id"))
 	var payload dto.CartRequestParams

@@ -49,7 +49,7 @@ func ValidateToken(next echo.HandlerFunc) echo.HandlerFunc {
 		if authToken == "" {
 			return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 				"status":  false,
-				"message": "unauthorized",
+				"message": "user unauthorized",
 			})
 		}
 
@@ -65,7 +65,7 @@ func ValidateToken(next echo.HandlerFunc) echo.HandlerFunc {
 		if !token.Valid || err != nil {
 			return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 				"status":  false,
-				"message": "unauthorized",
+				"message": "user unauthorized",
 			})
 		}
 
@@ -74,7 +74,7 @@ func ValidateToken(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 // func middlewa to get userId from token jwt
-func GetUserIdFromToken(e echo.Context) interface{} {
+func GetUserIdFromToken(e echo.Context) uint {
 	authToken := e.Request().Header.Get("Authorization")
 	log.Println("01 - authToken", authToken)
 	if authToken == "" {
@@ -94,10 +94,10 @@ func GetUserIdFromToken(e echo.Context) interface{} {
 		log.Println("tidak valid ternyata :)")
 		return 0
 	}
-	userId := token.Claims.(jwt.MapClaims)["userId"]
+	userId := token.Claims.(jwt.MapClaims)["userId"].(float64)
 	log.Println("04", userId)
 	if userId != 0 {
-		return userId
+		return uint(userId)
 	}
 	return 0
 }
