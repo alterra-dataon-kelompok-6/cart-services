@@ -81,8 +81,8 @@ func (h handler) GetById(e echo.Context) error {
 
 // create new cart
 func (h handler) Create(e echo.Context) error {
-	userId := middleware.GetUserIdFromToken(e)
-	log.Println(userId, "userId")
+	CustomerID := middleware.GetUserIdFromToken(e)
+	log.Println(CustomerID, "CustomerID")
 	var payload dto.CartRequestBodyCreate
 	if err := e.Bind(&payload); err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]interface{}{
@@ -90,11 +90,12 @@ func (h handler) Create(e echo.Context) error {
 			"message": "invalid data",
 		})
 	}
+	payload.CustomerID = CustomerID
 	cart, cartItem, err := h.service.Create(payload)
 	if err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  false,
-			"message": "failed to create data",
+			"message": err.Error(),
 		})
 	}
 	return e.JSON(http.StatusOK, map[string]interface{}{

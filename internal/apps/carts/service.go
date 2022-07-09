@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
-	"product-services/internal/apps/cart_items"
 	"product-services/internal/dto"
 	"product-services/internal/factory"
 	model "product-services/internal/models"
+	"product-services/internal/repository"
 	"product-services/libs/api"
 )
 
@@ -24,20 +24,24 @@ type Service interface {
 }
 
 type service struct {
-	CartRepository Repository
+	CartRepository repository.CartRepository
 }
 
 func NewService(f *factory.Factory) Service {
 	return &service{
-		CartRepository: NewRepo(f.DB),
+		CartRepository: repository.NewCartRepo(f.DB),
 	}
 }
 
-var CartItemRepo = cart_items.NewRepo(factory.NewFactory().DB)
+var CartItemRepo = repository.NewCartItemRepo(factory.NewFactory().DB)
 
 func (s service) Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.CartItem, error) {
 	var newCart = model.Cart{
 		CustomerID: payload.CustomerID,
+	}
+	// check is Customer ID not 0
+	if newCart.CustomerID == 0 {
+		return nil, nil, errors.New("customer")
 	}
 	// check cart is already exist ?
 	currentCart, err := s.CartRepository.GetCart(0, payload.CustomerID)
@@ -82,7 +86,7 @@ func (s service) Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.
 	if currentCartItem.ID == 0 {
 		// check stock
 		if stock < newCartItem.Qty {
-			return nil, nil, fmt.Errorf("qty melebihi stock yang tersedia, yaitu sejumlah %d", stock)
+			return nil, nil, fmt.Errorf("quantity exceeds available stock %d", stock)
 		}
 		cartItem, err = CartItemRepo.Create(newCartItem)
 	} else {
@@ -93,7 +97,7 @@ func (s service) Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.
 
 		// check stock
 		if stock < qty {
-			return nil, nil, fmt.Errorf("qty melebihi stock yang tersedia, yaitu sejumlah %d", stock)
+			return nil, nil, fmt.Errorf("quantity exceeds available stock %d", stock)
 		}
 
 		cartItem, err = CartItemRepo.Update(currentCartItem.ID, updatedData)

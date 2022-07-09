@@ -45,7 +45,7 @@ var secret string = env.GetEnv("JWT_SECRET")
 func ValidateToken(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		authToken := c.Request().Header.Get("Authorization")
-		log.Println("01 - authToken", authToken)
+		// log.Println("01 - authToken", authToken)
 		if authToken == "" {
 			return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 				"status":  false,
@@ -54,14 +54,14 @@ func ValidateToken(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		tokenString := strings.Split(authToken, " ")[1]
-		log.Println("02 - tokenString", tokenString)
+		// log.Println("02 - tokenString", tokenString)
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("error token")
 			}
 			return []byte(secret), nil
 		})
-		log.Println("03 - token", token)
+		// log.Println("03 - token", token)
 		if !token.Valid || err != nil {
 			return c.JSON(http.StatusUnauthorized, map[string]interface{}{
 				"status":  false,
@@ -76,26 +76,26 @@ func ValidateToken(next echo.HandlerFunc) echo.HandlerFunc {
 // func middlewa to get userId from token jwt
 func GetUserIdFromToken(e echo.Context) uint {
 	authToken := e.Request().Header.Get("Authorization")
-	log.Println("01 - authToken", authToken)
+	// log.Println("01 - authToken", authToken)
 	if authToken == "" {
 		return 0
 	}
 
 	tokenString := strings.Split(authToken, " ")[1]
-	log.Println("02 - tokenString", tokenString)
+	// log.Println("02 - tokenString", tokenString)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("error token")
 		}
 		return []byte(secret), nil
 	})
-	log.Println("03 - token", token)
+	// log.Println("03 - token", token)
 	if !token.Valid || err != nil {
 		log.Println("tidak valid ternyata :)")
 		return 0
 	}
 	userId := token.Claims.(jwt.MapClaims)["userId"].(float64)
-	log.Println("04", userId)
+	// log.Println("04", userId)
 	if userId != 0 {
 		return uint(userId)
 	}
