@@ -128,7 +128,7 @@ func (h handler) Update(e echo.Context) error {
 	if err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  false,
-			"message": "failed to update data",
+			"message": err.Error(),
 		})
 	}
 	return e.JSON(http.StatusOK, map[string]interface{}{
@@ -156,7 +156,7 @@ func (h handler) UpdateCustomerCart(e echo.Context) error {
 	if err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  false,
-			"message": "failed to update data",
+			"message": err.Error(),
 		})
 	}
 	return e.JSON(http.StatusOK, map[string]interface{}{
