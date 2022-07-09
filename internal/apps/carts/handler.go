@@ -6,6 +6,7 @@ import (
 
 	"product-services/internal/dto"
 	"product-services/internal/factory"
+	"product-services/middleware"
 
 	"github.com/labstack/echo/v4"
 )
@@ -58,6 +59,8 @@ func (h handler) GetById(e echo.Context) error {
 }
 
 func (h handler) Create(e echo.Context) error {
+	userId := middleware.GetUserIdFromToken(e)
+	log.Println(userId, "userId")
 	var payload dto.CartRequestBodyCreate
 	if err := e.Bind(&payload); err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]interface{}{
