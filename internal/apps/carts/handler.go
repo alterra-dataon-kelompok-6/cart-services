@@ -40,9 +40,9 @@ func (h handler) GetAll(e echo.Context) error {
 
 // get cart by customer id
 func (h handler) GetCustomerCart(e echo.Context) error {
-	customer_id := middleware.GetUserIdFromToken(e)
-
-	categories, err := h.service.GetCustomerCart(customer_id)
+	CustomerID := middleware.GetUserIdFromToken(e)
+	log.Println(CustomerID, "get customer cart")
+	categories, err := h.service.GetCustomerCart(CustomerID)
 
 	if err != nil {
 		return e.JSON(http.StatusNotFound, map[string]interface{}{
@@ -52,7 +52,7 @@ func (h handler) GetCustomerCart(e echo.Context) error {
 	}
 	return e.JSON(http.StatusOK, map[string]interface{}{
 		"status": true,
-		"data":   categories,
+		"datas":  categories,
 	})
 
 }
@@ -175,6 +175,25 @@ func (h handler) Delete(e echo.Context) error {
 		log.Println(err)
 	}
 	_, err := h.service.Delete(payload)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  false,
+			"message": "failed to delete data",
+		})
+	}
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"status":  true,
+		"message": "data has been deleted",
+	})
+}
+
+// delete customer cart data
+func (h handler) DeleteCustomerCart(e echo.Context) error {
+	// id, _ := strconv.Atoi(e.Param("id"))
+	CustomerID := middleware.GetUserIdFromToken(e)
+	log.Println(CustomerID, "CustomerID")
+
+	_, err := h.service.DeleteCustomerCart(CustomerID)
 	if err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  false,

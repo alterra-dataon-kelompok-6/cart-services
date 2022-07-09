@@ -22,6 +22,7 @@ type Service interface {
 	Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.CartItem, error)
 	GetCustomerCart(customer_id uint) (*dto.CartResponseGetById, error)
 	UpdateCustomerCart(CustomerID uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error)
+	DeleteCustomerCart(CustomerID uint) (interface{}, error)
 }
 
 type service struct {
@@ -221,5 +222,20 @@ func (s service) Delete(payload dto.CartRequestParams) (interface{}, error) {
 		return nil, err
 	}
 	log.Println(deleted, "deleted")
+	return deleted, err
+}
+
+func (s service) DeleteCustomerCart(CustomerID uint) (interface{}, error) {
+	// get cart_id
+	cart, err := s.CartRepository.GetCart(0, CustomerID)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("cart id", cart.ID, cart)
+	deleted, err := s.CartRepository.Delete(cart.ID)
+	if err != nil {
+		return nil, err
+	}
+	// log.Println(deleted, "deleted")
 	return deleted, err
 }
