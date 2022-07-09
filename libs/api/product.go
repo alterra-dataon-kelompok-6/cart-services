@@ -40,11 +40,18 @@ func GetProduct(id uint) *ProductResponseApi {
 	url := fmt.Sprintf("%v/products/%d", productBaseUrl, id)
 	log.Println(url)
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
+
 	// resp, err := http.NewRequest(http.MethodGet, url, nil)
 	resp, err := http.Get(url)
 
 	if err != nil {
 		log.Println(err)
+		return new(ProductResponseApi)
 	}
 
 	defer resp.Body.Close()
@@ -52,6 +59,7 @@ func GetProduct(id uint) *ProductResponseApi {
 
 	if err != nil {
 		log.Println(err)
+		return new(ProductResponseApi)
 	}
 
 	var data ProductResponseApi

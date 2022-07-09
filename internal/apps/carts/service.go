@@ -51,17 +51,18 @@ func (s service) Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.
 		return nil, nil, err
 	}
 
-	log.Println(currentCart, "debug ketemu 1")
+	// log.Println(currentCart, "debug ketemu 1")
 
 	var cart *model.Cart
 
+	// if current cart not found, create new cart
 	if currentCart.CustomerID == 0 {
 		cart, err = s.CartRepository.Create(newCart)
 
 		if err != nil {
 			return nil, nil, err
 		}
-		log.Println("debug insert doble", cart)
+		// log.Println("debug insert doble", cart)
 
 	} else {
 		cart = currentCart
@@ -84,6 +85,12 @@ func (s service) Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.
 		ProductID: payload.ProductID,
 		Qty:       payload.Qty,
 	}
+
+	// if product id == 0 / product not found return error product not found
+	if product.Data.Product.ID == 0 {
+		return nil, nil, fmt.Errorf("product with id %d not found", payload.ProductID)
+	}
+
 	var cartItem *model.CartItem
 	if currentCartItem.ID == 0 {
 		// check stock
@@ -185,6 +192,21 @@ func (s service) Update(id uint, payload dto.CartRequestBodyUpdate) (*model.Cart
 	updatedCartItem["product_id"] = payload.ProductID
 	updatedCartItem["qty"] = payload.Qty
 
+	// check product stock
+	product := api.GetProduct(payload.ProductID)
+	stock := product.Data.Product.Stock
+
+	log.Println("api get product", product)
+
+	// if product id == 0 / product not found return error product not found
+	if product.Data.Product.ID == 0 {
+		return nil, fmt.Errorf("product with id %d not found", payload.ProductID)
+	}
+
+	if payload.Qty > stock {
+		return nil, fmt.Errorf("quantity exceeds available stock %d", stock)
+	}
+
 	cartItem, err := CartItemRepo.Update(cartItemId.ID, updatedCartItem)
 	if err != nil {
 		return nil, err
@@ -209,6 +231,21 @@ func (s service) UpdateCustomerCart(CustomerID uint, payload dto.CartRequestBody
 	updatedCartItem["cart_id"] = cart.ID
 	updatedCartItem["product_id"] = payload.ProductID
 	updatedCartItem["qty"] = payload.Qty
+
+	// check product stock
+	product := api.GetProduct(payload.ProductID)
+	stock := product.Data.Product.Stock
+
+	log.Println("api get product", product)
+
+	// if product id == 0 / product not found return error product not found
+	if product.Data.Product.ID == 0 {
+		return nil, fmt.Errorf("product with id %d not found", payload.ProductID)
+	}
+
+	if payload.Qty > stock {
+		return nil, fmt.Errorf("quantity exceeds available stock %d", stock)
+	}
 
 	cartItem, err := CartItemRepo.Update(cartItemId.ID, updatedCartItem)
 	if err != nil {
