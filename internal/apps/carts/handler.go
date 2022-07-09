@@ -138,6 +138,34 @@ func (h handler) Update(e echo.Context) error {
 
 }
 
+// update customer cart data
+func (h handler) UpdateCustomerCart(e echo.Context) error {
+	// id, _ := strconv.Atoi(e.Param("id"))
+	CustomerID := middleware.GetUserIdFromToken(e)
+	log.Println(CustomerID, "CustomerID")
+	var payload dto.CartRequestBodyUpdate
+
+	if err := e.Bind(&payload); err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  false,
+			"message": "invalid data",
+		})
+	}
+
+	cart, err := h.service.UpdateCustomerCart(CustomerID, payload)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  false,
+			"message": "failed to update data",
+		})
+	}
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"status": true,
+		"data":   cart,
+	})
+
+}
+
 // delete cart data
 func (h handler) Delete(e echo.Context) error {
 	// id, _ := strconv.Atoi(e.Param("id"))

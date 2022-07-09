@@ -16,11 +16,12 @@ type Service interface {
 	// admin roles
 	GetAll() (*[]model.Cart, error)
 	GetById(payload dto.CartRequestParams) (*dto.CartResponseGetById, error)
+	Update(id uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error)
+	Delete(payload dto.CartRequestParams) (interface{}, error)
 	// customer_roles and admin_roles
 	Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.CartItem, error)
 	GetCustomerCart(customer_id uint) (*dto.CartResponseGetById, error)
-	Update(id uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error)
-	Delete(payload dto.CartRequestParams) (interface{}, error)
+	UpdateCustomerCart(CustomerID uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error)
 }
 
 type service struct {
@@ -178,6 +179,31 @@ func (s service) Update(id uint, payload dto.CartRequestBodyUpdate) (*model.Cart
 
 	updatedCartItem := make(map[string]interface{})
 	updatedCartItem["cart_id"] = cartId
+	updatedCartItem["product_id"] = payload.ProductID
+	updatedCartItem["qty"] = payload.Qty
+
+	cartItem, err := CartItemRepo.Update(cartItemId.ID, updatedCartItem)
+	if err != nil {
+		return nil, err
+	}
+
+	return cartItem, nil
+}
+
+func (s service) UpdateCustomerCart(CustomerID uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error) {
+	// get cart_id
+	cart, err := s.CartRepository.GetCart(0, CustomerID)
+	if err != nil {
+		return nil, err
+	}
+	// get cart_item_id
+	cartItemId, err := CartItemRepo.GetCartItem(0, cart.ID, payload.ProductID)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedCartItem := make(map[string]interface{})
+	updatedCartItem["cart_id"] = cart.ID
 	updatedCartItem["product_id"] = payload.ProductID
 	updatedCartItem["qty"] = payload.Qty
 
