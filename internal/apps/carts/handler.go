@@ -52,7 +52,7 @@ func (h handler) GetCustomerCart(e echo.Context) error {
 	}
 	return e.JSON(http.StatusOK, map[string]interface{}{
 		"status": true,
-		"datas":  categories,
+		"data":   categories,
 	})
 
 }

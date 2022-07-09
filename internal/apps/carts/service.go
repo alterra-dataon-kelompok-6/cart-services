@@ -149,6 +149,7 @@ func (s service) GetById(payload dto.CartRequestParams) (*dto.CartResponseGetByI
 func (s service) GetCustomerCart(customer_id uint) (*dto.CartResponseGetById, error) {
 	var result = new(dto.CartResponseGetById)
 
+	// get customer cart
 	cart, err := s.CartRepository.GetCart(0, customer_id)
 	if err != nil {
 		return nil, err
@@ -156,6 +157,7 @@ func (s service) GetCustomerCart(customer_id uint) (*dto.CartResponseGetById, er
 
 	result.Cart = *cart
 
+	// get cart item
 	cart_items, err := CartItemRepo.GetAll(cart.ID)
 	if err != nil {
 		return nil, err

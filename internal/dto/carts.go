@@ -17,7 +17,13 @@ type CartRequestBodyUpdate struct {
 	Qty       uint `json:"qty" validate:"required"`
 }
 
+type Customer struct {
+	CustomerID   uint   `json:"customer_id" validate:"required"`
+	CustomerName string `json:"customer_name" validate:"required"`
+}
+
 type CartResponseGetById struct {
 	model.Cart
 	CartItems []model.CartItem `json:"cart_items"`
+	// Customer  Customer         `json:"customer"` // next development
 }
