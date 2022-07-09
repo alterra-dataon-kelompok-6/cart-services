@@ -6,6 +6,7 @@ import (
 
 	"product-services/internal/dto"
 	"product-services/internal/factory"
+	"product-services/middleware"
 
 	"github.com/labstack/echo/v4"
 )
@@ -20,6 +21,7 @@ func NewHandler(f *factory.Factory) *handler {
 	}
 }
 
+// get all cart
 func (h handler) GetAll(e echo.Context) error {
 	categories, err := h.service.GetAll()
 
@@ -36,6 +38,26 @@ func (h handler) GetAll(e echo.Context) error {
 
 }
 
+// get cart by customer id
+func (h handler) GetCustomerCart(e echo.Context) error {
+	CustomerID := middleware.GetUserIdFromToken(e)
+	log.Println(CustomerID, "get customer cart")
+	categories, err := h.service.GetCustomerCart(CustomerID)
+
+	if err != nil {
+		return e.JSON(http.StatusNotFound, map[string]interface{}{
+			"status":  false,
+			"message": "data not found",
+		})
+	}
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"status": true,
+		"data":   categories,
+	})
+
+}
+
+// get cart by cart_id
 func (h handler) GetById(e echo.Context) error {
 	// id, _ := strconv.Atoi(e.Param("id"))
 	var payload dto.CartRequestParams
@@ -57,7 +79,10 @@ func (h handler) GetById(e echo.Context) error {
 	})
 }
 
+// create new cart
 func (h handler) Create(e echo.Context) error {
+	CustomerID := middleware.GetUserIdFromToken(e)
+	log.Println(CustomerID, "CustomerID")
 	var payload dto.CartRequestBodyCreate
 	if err := e.Bind(&payload); err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]interface{}{
@@ -65,11 +90,12 @@ func (h handler) Create(e echo.Context) error {
 			"message": "invalid data",
 		})
 	}
+	payload.CustomerID = CustomerID
 	cart, cartItem, err := h.service.Create(payload)
 	if err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  false,
-			"message": "failed to create data",
+			"message": err.Error(),
 		})
 	}
 	return e.JSON(http.StatusOK, map[string]interface{}{
@@ -81,6 +107,7 @@ func (h handler) Create(e echo.Context) error {
 	})
 }
 
+// update cart data
 func (h handler) Update(e echo.Context) error {
 	// id, _ := strconv.Atoi(e.Param("id"))
 	var id dto.CartRequestParams
@@ -111,6 +138,35 @@ func (h handler) Update(e echo.Context) error {
 
 }
 
+// update customer cart data
+func (h handler) UpdateCustomerCart(e echo.Context) error {
+	// id, _ := strconv.Atoi(e.Param("id"))
+	CustomerID := middleware.GetUserIdFromToken(e)
+	log.Println(CustomerID, "CustomerID")
+	var payload dto.CartRequestBodyUpdate
+
+	if err := e.Bind(&payload); err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  false,
+			"message": "invalid data",
+		})
+	}
+
+	cart, err := h.service.UpdateCustomerCart(CustomerID, payload)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  false,
+			"message": "failed to update data",
+		})
+	}
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"status": true,
+		"data":   cart,
+	})
+
+}
+
+// delete cart data
 func (h handler) Delete(e echo.Context) error {
 	// id, _ := strconv.Atoi(e.Param("id"))
 	var payload dto.CartRequestParams
@@ -119,6 +175,25 @@ func (h handler) Delete(e echo.Context) error {
 		log.Println(err)
 	}
 	_, err := h.service.Delete(payload)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  false,
+			"message": "failed to delete data",
+		})
+	}
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"status":  true,
+		"message": "data has been deleted",
+	})
+}
+
+// delete customer cart data
+func (h handler) DeleteCustomerCart(e echo.Context) error {
+	// id, _ := strconv.Atoi(e.Param("id"))
+	CustomerID := middleware.GetUserIdFromToken(e)
+	log.Println(CustomerID, "CustomerID")
+
+	_, err := h.service.DeleteCustomerCart(CustomerID)
 	if err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]interface{}{
 			"status":  false,

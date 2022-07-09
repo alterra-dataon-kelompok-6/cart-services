@@ -1,4 +1,4 @@
-package cart_items
+package repository
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Repository interface {
+type CartItemRepository interface {
 	Create(cartItem model.CartItem) (*model.CartItem, error)
 	GetAll(cart_id uint) (*[]model.CartItem, error)
 	GetCartItem(id, cart_id, product_id uint) (*model.CartItem, error)
@@ -17,22 +17,22 @@ type Repository interface {
 	Delete(id uint) (bool, error)
 }
 
-type repository struct {
+type cartItemRepository struct {
 	DB *gorm.DB
 }
 
-func NewRepo(DB *gorm.DB) Repository {
-	return &repository{DB: DB}
+func NewCartItemRepo(DB *gorm.DB) CartItemRepository {
+	return &cartItemRepository{DB: DB}
 }
 
-func (r *repository) Create(cartItem model.CartItem) (*model.CartItem, error) {
+func (r *cartItemRepository) Create(cartItem model.CartItem) (*model.CartItem, error) {
 	if err := r.DB.Save(&cartItem).Error; err != nil {
 		return nil, err
 	}
 	return &cartItem, nil
 }
 
-func (r *repository) GetAll(cart_id uint) (*[]model.CartItem, error) {
+func (r *cartItemRepository) GetAll(cart_id uint) (*[]model.CartItem, error) {
 	var cart_items []model.CartItem
 	if cart_id != 0 {
 		if err := r.DB.Debug().Where("cart_id = ?", cart_id).Find(&cart_items).Error; err != nil {
@@ -48,7 +48,7 @@ func (r *repository) GetAll(cart_id uint) (*[]model.CartItem, error) {
 	return &cart_items, nil
 }
 
-func (r *repository) GetCartItem(id, cart_id, product_id uint) (*model.CartItem, error) {
+func (r *cartItemRepository) GetCartItem(id, cart_id, product_id uint) (*model.CartItem, error) {
 	var cartItem model.CartItem
 	if cart_id != 0 && product_id != 0 {
 		if err := r.DB.Where("cart_id = ? AND product_id = ?", cart_id, product_id).Find(&cartItem).Error; err != nil {
@@ -62,7 +62,7 @@ func (r *repository) GetCartItem(id, cart_id, product_id uint) (*model.CartItem,
 	return &cartItem, nil
 }
 
-func (r *repository) Update(id uint, updatedData map[string]interface{}) (*model.CartItem, error) {
+func (r *cartItemRepository) Update(id uint, updatedData map[string]interface{}) (*model.CartItem, error) {
 	log.Println("udpate cart items id, updatedData", id, updatedData)
 	if cartItems, _ := r.GetCartItem(id, 0, 0); cartItems.ID <= 0 {
 		return nil, errors.New("data not found")
@@ -79,7 +79,7 @@ func (r *repository) Update(id uint, updatedData map[string]interface{}) (*model
 	return &newCartItem, nil
 }
 
-func (r *repository) Delete(id uint) (bool, error) {
+func (r *cartItemRepository) Delete(id uint) (bool, error) {
 	if cartItem, _ := r.GetCartItem(id, 0, 0); cartItem.ID <= 0 {
 		return false, errors.New("data not found")
 	}
