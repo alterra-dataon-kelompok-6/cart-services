@@ -16,6 +16,7 @@ type Service interface {
 	// admin roles
 	GetAll() (*[]model.Cart, error)
 	GetById(payload dto.CartRequestParams) (*dto.CartResponseGetById, error)
+	GetCartItemDetails(payload dto.CartItemDetailRequestParams) (*dto.CartResponseCartItemDetails, error)
 	Update(id uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error)
 	Delete(payload dto.CartRequestParams) (interface{}, error)
 	// customer_roles and admin_roles
@@ -122,11 +123,11 @@ func (s service) Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.
 }
 
 func (s service) GetAll() (*[]model.Cart, error) {
-	categories, err := s.CartRepository.GetAll()
-	if err != nil || len(*categories) <= 0 {
+	carts, err := s.CartRepository.GetAll()
+	if err != nil || len(*carts) <= 0 {
 		return nil, errors.New("data is empty")
 	}
-	return categories, nil
+	return carts, nil
 }
 
 func (s service) GetById(payload dto.CartRequestParams) (*dto.CartResponseGetById, error) {
@@ -177,6 +178,49 @@ func (s service) GetCustomerCart(customer_id uint) (*dto.CartResponseGetById, er
 		return nil, errors.New("data not found")
 	}
 	return result, nil
+}
+
+func (s service) GetCartItemDetails(payload dto.CartItemDetailRequestParams) (*dto.CartResponseCartItemDetails, error) {
+	log.Println("params", payload)
+
+	var result dto.CartResponseCartItemDetails
+
+	// // payload cart
+	// var payloadCart dto.CartRequestParams
+	// payloadCart.ID = payload.ID
+
+	// get data cart
+	cart, err := s.CartRepository.GetCart(payload.ID, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	result.Cart = *cart
+
+	// get cart item
+	cart_item, err := CartItemRepo.GetCartItem(payload.CartItemID, 0, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if cart.ID != cart_item.CartID {
+		return nil, fmt.Errorf("cart item id %d with cart id %d not found", cart_item.ID, cart.ID)
+	}
+
+	result.CartItem = *cart_item
+
+	// get product details
+	product := api.GetProduct(cart_item.ProductID)
+
+	// if product id == 0 / product not found return error product not found
+	if product.Data.Product.ID == 0 {
+		return nil, fmt.Errorf("product with id %d not found", cart_item.ProductID)
+	}
+
+	result.Product.ProductID = product.Data.ID
+	result.Product.ProductName = product.Data.Name
+
+	return &result, nil
 }
 
 func (s service) Update(id uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error) {

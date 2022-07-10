@@ -23,7 +23,7 @@ func NewHandler(f *factory.Factory) *handler {
 
 // get all cart
 func (h handler) GetAll(e echo.Context) error {
-	categories, err := h.service.GetAll()
+	carts, err := h.service.GetAll()
 
 	if err != nil {
 		return e.JSON(http.StatusNotFound, map[string]interface{}{
@@ -33,7 +33,7 @@ func (h handler) GetAll(e echo.Context) error {
 	}
 	return e.JSON(http.StatusOK, map[string]interface{}{
 		"status": true,
-		"data":   categories,
+		"data":   carts,
 	})
 
 }
@@ -42,7 +42,7 @@ func (h handler) GetAll(e echo.Context) error {
 func (h handler) GetCustomerCart(e echo.Context) error {
 	CustomerID := middleware.GetUserIdFromToken(e)
 	log.Println(CustomerID, "get customer cart")
-	categories, err := h.service.GetCustomerCart(CustomerID)
+	carts, err := h.service.GetCustomerCart(CustomerID)
 
 	if err != nil {
 		return e.JSON(http.StatusNotFound, map[string]interface{}{
@@ -52,7 +52,7 @@ func (h handler) GetCustomerCart(e echo.Context) error {
 	}
 	return e.JSON(http.StatusOK, map[string]interface{}{
 		"status": true,
-		"data":   categories,
+		"data":   carts,
 	})
 
 }
@@ -76,6 +76,27 @@ func (h handler) GetById(e echo.Context) error {
 	return e.JSON(http.StatusOK, map[string]interface{}{
 		"status": true,
 		"data":   cart,
+	})
+}
+
+func (h handler) GetCartItemDetails(e echo.Context) error {
+	// bind params to payload
+	var payload dto.CartItemDetailRequestParams
+	if err := (&echo.DefaultBinder{}).BindPathParams(e, &payload); err != nil {
+		log.Println(err)
+	}
+
+	result, err := h.service.GetCartItemDetails(payload)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  false,
+			"message": err.Error(),
+		})
+	}
+
+	// return errors.New("error")
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"payload": result,
 	})
 }
 
