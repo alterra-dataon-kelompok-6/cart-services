@@ -22,6 +22,7 @@ type Service interface {
 	// customer_roles and admin_roles
 	Create(payload dto.CartRequestBodyCreate) (*model.Cart, *model.CartItem, error)
 	GetCustomerCart(customer_id uint) (*dto.CartResponseGetById, error)
+	GetCustomerCartItemDetails(CustomerID uint, payload dto.CartItemDetailRequestParams) (*dto.CartResponseCartItemDetails, error)
 	UpdateCustomerCart(CustomerID uint, payload dto.CartRequestBodyUpdate) (*model.CartItem, error)
 	DeleteCustomerCart(CustomerID uint) (interface{}, error)
 }
@@ -204,7 +205,48 @@ func (s service) GetCartItemDetails(payload dto.CartItemDetailRequestParams) (*d
 	}
 
 	if cart.ID != cart_item.CartID {
-		return nil, fmt.Errorf("cart item id %d with cart id %d not found", cart_item.ID, cart.ID)
+		return nil, fmt.Errorf("cart item id %d with cart id %d not found", payload.CartItemID, cart.ID)
+	}
+
+	result.CartItem = *cart_item
+
+	// get product details
+	product := api.GetProduct(cart_item.ProductID)
+
+	// if product id == 0 / product not found return error product not found
+	if product.Data.Product.ID == 0 {
+		return nil, fmt.Errorf("product with id %d not found", cart_item.ProductID)
+	}
+
+	result.Product.ProductID = product.Data.ID
+	result.Product.ProductName = product.Data.Name
+
+	return &result, nil
+}
+
+func (s service) GetCustomerCartItemDetails(CustomerID uint, payload dto.CartItemDetailRequestParams) (*dto.CartResponseCartItemDetails, error) {
+	log.Println("params", payload)
+
+	var result dto.CartResponseCartItemDetails
+
+	// find cart id with customer id
+	cart, err := s.CartRepository.GetCart(0, CustomerID)
+	// get data cart
+	// cart, err := s.CartRepository.GetCart(payload.ID, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	result.Cart = *cart
+
+	// get cart item
+	cart_item, err := CartItemRepo.GetCartItem(payload.CartItemID, 0, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if cart.ID != cart_item.CartID {
+		return nil, fmt.Errorf("cart item id %d with cart id %d not found", payload.CartItemID, cart.ID)
 	}
 
 	result.CartItem = *cart_item

@@ -100,6 +100,30 @@ func (h handler) GetCartItemDetails(e echo.Context) error {
 	})
 }
 
+func (h handler) GetCustomerCartItemDetails(e echo.Context) error {
+	// get customer id form jwt token
+	CustomerID := middleware.GetUserIdFromToken(e)
+
+	// bind params to payload
+	var payload dto.CartItemDetailRequestParams
+	if err := (&echo.DefaultBinder{}).BindPathParams(e, &payload); err != nil {
+		log.Println(err)
+	}
+
+	result, err := h.service.GetCustomerCartItemDetails(CustomerID, payload)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  false,
+			"message": err.Error(),
+		})
+	}
+
+	// return errors.New("error")
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"payload": result,
+	})
+}
+
 // create new cart
 func (h handler) Create(e echo.Context) error {
 	CustomerID := middleware.GetUserIdFromToken(e)
